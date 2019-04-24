@@ -16,44 +16,22 @@
 
 package com.google.common.graph;
 
-import static com.google.common.graph.GraphConstants.GRAPH_STRING_FORMAT;
-
 import com.google.common.annotations.Beta;
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.collect.Maps;
-import java.util.Set;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * This class provides a skeletal implementation of {@link Graph}. It is recommended to extend this
- * class rather than implement {@link Graph} directly, to ensure consistent {@link #equals(Object)}
- * and {@link #hashCode()} results across different graph implementations.
+ * class rather than implement {@link Graph} directly.
  *
  * @author James Sexton
  * @param <N> Node parameter type
  * @since 20.0
  */
 @Beta
-public abstract class AbstractGraph<N> implements Graph<N> {
+public abstract class AbstractGraph<N> extends AbstractBaseGraph<N> implements Graph<N> {
 
   @Override
-  public int degree(Object node) {
-    return adjacentNodes(node).size();
-  }
-
-  @Override
-  public int inDegree(Object node) {
-    return predecessors(node).size();
-  }
-
-  @Override
-  public int outDegree(Object node) {
-    return successors(node).size();
-  }
-
-  @Override
-  public boolean equals(@Nullable Object obj) {
+  public final boolean equals(@Nullable Object obj) {
     if (obj == this) {
       return true;
     }
@@ -62,52 +40,26 @@ public abstract class AbstractGraph<N> implements Graph<N> {
     }
     Graph<?> other = (Graph<?>) obj;
 
-    // Needed to enforce a symmetric equality relationship.
-    if (other instanceof Network) {
-      return false;
-    }
-
-    if (isDirected() != other.isDirected()) {
-      return false;
-    }
-
-    if (!nodes().equals(other.nodes())) {
-      return false;
-    }
-
-    for (N node : nodes()) {
-      if (!successors(node).equals(other.successors(node))) {
-        return false;
-      }
-    }
-
-    return true;
+    return isDirected() == other.isDirected()
+        && nodes().equals(other.nodes())
+        && edges().equals(other.edges());
   }
 
   @Override
-  public int hashCode() {
-    Function<N, Set<N>> nodeToSuccessors = new Function<N, Set<N>>() {
-      @Override
-      public Set<N> apply(N node) {
-        return successors(node);
-      }
-    };
-    return Maps.asMap(nodes(), nodeToSuccessors).hashCode();
+  public final int hashCode() {
+    return edges().hashCode();
   }
 
-  /**
-   * Returns a string representation of this graph.
-   */
+  /** Returns a string representation of this graph. */
   @Override
   public String toString() {
-    // TODO(b/28087289): add allowsParallelEdges() once that's supported
-    String propertiesString = String.format(
-        "isDirected: %s, allowsSelfLoops: %s", isDirected(), allowsSelfLoops());
-    String endpointsString = String.format(
-        "{%s}", Joiner.on(", ").join(Graphs.endpointsInternal(this)));
-    return String.format(GRAPH_STRING_FORMAT,
-        propertiesString,
-        nodes(),
-        endpointsString);
+    return "isDirected: "
+        + isDirected()
+        + ", allowsSelfLoops: "
+        + allowsSelfLoops()
+        + ", nodes: "
+        + nodes()
+        + ", edges: "
+        + edges();
   }
 }
